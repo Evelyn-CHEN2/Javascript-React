@@ -1,26 +1,87 @@
 import { ActivityIndicator, StyleSheet, Text, View, TouchableOpacity, Image} from 'react-native';
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect, use} from 'react';
 import { FlatList } from 'react-native-gesture-handler'; 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { add, remove, clear } from '../../store/cartSlice';
+import { getCart, updateCart, clearCart } from '../../store/cartSlice';
+import { createOrder } from '../../store/orderSlice';
 import colors from '../constants/color';
 import IconButton from '../components/IconButton';
+import { useIsFocused } from '@react-navigation/native';
 
-export default function ShoppingCart({route, navigation}) {
+export default function ShoppingCart({navigation}) {
     const dispatch = useDispatch();
+    const loggedUser = useSelector(state => state.user.loggedUser);
+    const userID = loggedUser?.id;
+    const token = loggedUser?.token;
     const cartItems = useSelector(state => state.cart.cartItems);
     const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
     const [isLoading, setIsLoading] = useState(true);
-    useEffect (() => {
-    if (cartItems.length > 0) {
-        setIsLoading(false);
-    }else {
-        setIsLoading(false);
-    }
-    }, [cartItems])
+    const isFocused = useIsFocused();
 
+    const order = useSelector(state => state.orderItems)
+
+    useEffect(() => {
+        const fetchCartItems = async () => {
+            if (userID && token && isFocused) {
+                try {
+                    await dispatch(getCart({ userID, token })).unwrap(); 
+                } catch (error) {
+                    console.error("Failed to fetch cart items on cart page:", error);
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        };
+        fetchCartItems();
+    }, [dispatch, userID, token, isFocused]);
+
+    const handleAddItem = async(item) => {
+        let updatedCartItems;
+        updatedCartItems = cartItems.map(cartItem => {
+            if (cartItem.id === item.id) {
+                return {...cartItem, quantity: cartItem.quantity + 1};
+            }
+            return cartItem;
+        })
+        dispatch(updateCart({ userID, token, cartItems: updatedCartItems }));
+    }
+        
+    const handleRemoveItem = async(item) => {
+        let updatedCartItems;
+        updatedCartItems = cartItems.map(cartItem => {
+            if (cartItem.id === item.id) {
+                return {...cartItem, quantity: cartItem.quantity - 1};
+            }
+            return cartItem;
+        }).filter(cartItem => cartItem.quantity > 0);
+        dispatch(updateCart({ userID, token, cartItems: updatedCartItems }));
+    }
+    
+    const handleClearCart = async() => {
+        if (userID && token) {
+            try {
+                await dispatch(clearCart({ userID, token })).unwrap();
+            } catch (error) {
+                console.error("Error clearing cart:", error);
+            }
+        }
+    }
+
+    const handleCheckout = async(cartItems) => {
+        if (userID && token) {
+            try {
+                await dispatch(createOrder({ userID, token, items: cartItems })).unwrap();
+                dispatch(clearCart({ userID, token }));
+                navigation.navigate('Orders');
+            } catch (error) {
+                console.error("Error during checkout:", error);
+            }
+        }
+
+    }
+    
     return (
         <SafeAreaView style={{flex:1}} edges={['left', 'right', 'bottom']}>
             {isLoading &&
@@ -36,7 +97,7 @@ export default function ShoppingCart({route, navigation}) {
                 </View>) : 
                 (<View style={styles.container}>
                     <View style={styles.topBox}> 
-                        <TouchableOpacity style={styles.removeButton} onPress={() => dispatch(clear())}>
+                        <TouchableOpacity style={styles.removeButton} onPress={() => handleClearCart()}>
                             <Text style={styles.removeText}>Remove All</Text>
                         </TouchableOpacity>
                     </View>
@@ -60,11 +121,11 @@ export default function ShoppingCart({route, navigation}) {
                                             <Text style={{fontWeight: 'bold'}}>Price: </Text><Text>${item.price}</Text>
                                         </View>
                                         <View style={{flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
-                                            <TouchableOpacity onPress = {() => dispatch(remove({id: item.id}))}>
+                                            <TouchableOpacity onPress = {() => handleRemoveItem(item)}>
                                                 <IconButton name='remove-circle' size={22} color={colors.titleBorder}/>
                                             </TouchableOpacity>
-                                            <Text style={{marginLeft:10, marginRight:10}}>Quantity: {item.quantity}</Text>
-                                            <TouchableOpacity onPress = {() => dispatch(add(item))}>
+                                            <Text style={{marginLeft:10, marginRight:10}}>Qty: {item.quantity}</Text>
+                                            <TouchableOpacity onPress = {() => handleAddItem(item)}>
                                                 <IconButton name='add-circle' size={22} color={colors.titleBorder}/>
                                             </TouchableOpacity>
                                         </View>
@@ -85,7 +146,7 @@ export default function ShoppingCart({route, navigation}) {
                                 <Text style={{fontSize: 20, fontWeight: 'bold'}}>${totalPrice}</Text>
                             </View>
                         </View>
-                        <TouchableOpacity style={styles.checkoutButton} onPress={() => navigation.navigate('Checkout', ({totalPrice}))}>
+                        <TouchableOpacity style={styles.checkoutButton} onPress={() => handleCheckout(cartItems)}>
                             <IconButton name='bag-check' size={20} color='black'/>
                             <Text style={{fontSize: 15}}>Check Out</Text>
                         </TouchableOpacity>

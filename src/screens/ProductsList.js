@@ -25,7 +25,7 @@ export default function ProductsList( {route, navigation}) {
                 setIsLoading(false);
             }
             catch(e){
-                console.error('Error fetching data: ', e)
+                console.error('Error fetching products list data: ', e)
             }
             finally {
                 console.log('Fetch attempt finished');
@@ -55,10 +55,10 @@ export default function ProductsList( {route, navigation}) {
                         renderItem={({item}) => (
                             <TouchableOpacity style={styles.productsListBox} onPress={() => handleProduct(item.id)}>
                                 <View style={styles.productsImageBox}>
-                                <Image 
-                                    source={{uri: item.image}}
-                                    style={{width: 65, height: 65, resizeMode: 'center'}}
-                                />
+                                    <Image 
+                                        source={{uri: item.image}}
+                                        style={{width: 65, height: 65, resizeMode: 'center'}}
+                                    />
                                 </View>
                                 <View style={styles.productsContentBox}>
                                     <View style={{flex:3, justifyContent: 'flex-start'}}><Text style={selectedProduct === item.id && {color: '#f3722c'}}>{item.title}</Text></View>

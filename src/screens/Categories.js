@@ -35,7 +35,7 @@ export default function Categories( {navigation}) {
                 setIsLoading(false);
             }
             catch(e){
-                console.error('Error fetching data: ', e)
+                console.error('Error fetching categories data: ', e)
             }
             finally {
                 console.log('Fetch attempt finished');

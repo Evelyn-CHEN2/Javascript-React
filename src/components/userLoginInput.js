@@ -1,9 +1,7 @@
 import { StyleSheet, View, TextInput } from "react-native";
 import React from "react";
 
-import colors from "../constants/color";
-
-const UserLoginInput = ({text, setText, placeholder}) => {
+const UserLoginInput = ({text, setText, placeholder, secureTextEntry}) => {
     return (
         <View style={styles.container}>
             <TextInput
@@ -12,6 +10,7 @@ const UserLoginInput = ({text, setText, placeholder}) => {
                 value = {text}
                 placeholder = {placeholder}
                 onChangeText = {setText}
+                secureTextEntry = {secureTextEntry}
             />
         </View>
     )
@@ -19,14 +18,14 @@ const UserLoginInput = ({text, setText, placeholder}) => {
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 20,
+        textAlign: 'center'
     },
     input: {
     borderBottomWidth: 1,
     borderBottomColor: '#888',
     padding: 8,
     borderRadius: 5,
-    marginBottom: 15,
+    marginBottom: 5,
     }
 })
 

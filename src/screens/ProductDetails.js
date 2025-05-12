@@ -1,18 +1,18 @@
-import { ActivityIndicator, StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
-import { useState, useEffect, useContext} from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useState, useEffect } from 'react';
 import ProductDetailsDisplay from '../components/ProductDetailsDisplay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../constants/color';
-import { useDispatch } from 'react-redux';
-import { add } from '../../store/cartSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { add, updateCart, getCart } from '../../store/cartSlice';
 import { API_BASE_URL } from '../config';
-
 
 export default function ProductDetails({route, navigation}) {
     const [isLoading, setIsLoading] = useState(true);
     const id = route.params.id;
     const [selectedProduct, setSelectedProduct] = useState([]);
     const dispatch = useDispatch();
+
     useEffect(() =>{
         const fetchData = async () => {
             try {
@@ -27,7 +27,7 @@ export default function ProductDetails({route, navigation}) {
                 setIsLoading(false);
             }
             catch(e){
-                console.error('Error fetching data: ', e)
+                console.error('Error fetching product details data: ', e)
             }
             finally {
                 console.log('Fetch attempt finished');
@@ -36,10 +36,31 @@ export default function ProductDetails({route, navigation}) {
         fetchData()
     } , [id])
 
-    const AddToCart = () => {
-        dispatch(add(selectedProduct))
-        navigation.navigate('ShoppingCart')
+    const cartItems = useSelector((state) => state.cart.cartItems);
+    const loggedUser = useSelector(state => state.user.loggedUser);
+    const userID = loggedUser?.id;
+    const token = loggedUser?.token;
+
+    const AddToCart = async() => {
+        const existedItem = cartItems.find(cartItem => cartItem.id === selectedProduct.id);
+        let updatedCartItems;
+        if (existedItem) {
+            updatedCartItems = cartItems.map(item => 
+                item.id === selectedProduct.id ? {...item, quantity: item.quantity + 1} : item
+            )
+        }else{
+            updatedCartItems = [...cartItems, {...selectedProduct, quantity: 1}];
+        }
+        if (userID && token) {
+            try {
+                await dispatch(updateCart({ userID, token, cartItems: updatedCartItems })).unwrap();
+            } catch (error) {
+                console.error("Error updating cart on server:", error);
+            }
+        }
+        navigation.navigate('ShoppingCart');
     }
+    
     return (
         <SafeAreaView style={{flex:1}} edges={['left', 'right', 'bottom']}> 
             <ProductDetailsDisplay

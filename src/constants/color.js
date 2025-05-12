@@ -4,6 +4,7 @@ const colors = {
     contentBorder: '#d2d2d2',
     contentBackground: 'white',
     selectedColor: '#f3722c',
+    orderBackground: '#f8f9fa'
 }
 
 export default colors;

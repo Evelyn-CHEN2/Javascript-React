@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -11,8 +11,11 @@ import { useSelector } from 'react-redux';
 
 const Tab = createBottomTabNavigator();
 export default function BottomTab() {
-    const cartItems = useSelector((state) => state.cart.cartItems);
+    const loggedUser = useSelector(state => state.user.loggedUser)
+    const cartItems = useSelector(state => state.cart.cartItems) || []; //To make sure before trigger getCart, cartItems is not undefined
+    console.log("Check cartItems in BottomTab:", cartItems.length);
     const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    
     return (
       <Tab.Navigator
         screenOptions={({route})=> ({
@@ -56,17 +59,65 @@ export default function BottomTab() {
         options={{tabBarLabel: 'Products', headerShown: false}}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
+            if (!loggedUser) {
+              e.preventDefault();
+              Alert.alert('Login required', 'Please login to access this feature.')
+              navigation.navigate('Profile Tab', {
+                screen: 'SignIn',
+              })
+            }else{
             // Prevent default behavior
-            e.preventDefault();
-            // Reset to root screen of the stack (Categories)
-            navigation.navigate('Product Tabs', {
-              screen: 'Categories', 
-          });
+              e.preventDefault();
+              // Reset to root screen of the stack (Categories)
+              navigation.navigate('Product Tabs', {
+                screen: 'Categories',
+              })
+          };
         }
       })}
       />
-      <Tab.Screen name='ShoppingCart' component={ShoppingCart} options={{tabBarLabel: 'My Cart', headerTitleStyle: {fontSize: 22, fontWeight: 'bold'}, headerTitleAlign: 'center'}}/>
-      <Tab.Screen name='Orders' component={Orders} options={{tabBarLabel: 'My Orders', headerTitleStyle: {fontSize: 22, fontWeight: 'bold'}, headerTitleAlign: 'center'}}/>
+      <Tab.Screen name='ShoppingCart' component={ShoppingCart} 
+          options={{
+            tabBarLabel: 'My Cart', 
+            headerTitleStyle: {
+              fontSize: 22, 
+              fontWeight: 'bold'
+            }, 
+            headerTitleAlign: 'center'
+          }}
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              if (!loggedUser) {
+                e.preventDefault();
+                Alert.alert('Login required', 'Please login to access this feature.')
+                navigation.navigate('Profile Tab', {
+                  screen: 'SignIn',
+                })
+              }
+            }
+          })}
+        />
+      <Tab.Screen name='Orders' component={Orders} 
+        options={{
+          tabBarLabel: 'My Orders', 
+          headerTitleStyle: {
+            fontSize: 22, 
+            fontWeight: 'bold'
+          }, 
+          headerTitleAlign: 'center'
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            if (!loggedUser) {
+              e.preventDefault();
+              Alert.alert('Login required', 'Please login to access this feature.')
+              navigation.navigate('Profile Tab', {
+                screen: 'SignIn',
+              })
+            }
+          }
+        })}
+      />
       <Tab.Screen name='Profile Tab' component={UserNavigation} 
         options={{tabBarLabel:'User Profiles', headerTitleStyle: {fontSize: 22, fontWeight: 'bold'}, headerTitleAlign: 'center', headerShown: false}}/>
       </Tab.Navigator>

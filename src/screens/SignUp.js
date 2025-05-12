@@ -1,78 +1,83 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { signUp } from '../../store/userSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import UserLoginInput from '../components/userLoginInput';
 import colors from '../constants/color';
 import IconButton from '../components/IconButton';
 import { Alert } from 'react-native';
-import { API_BASE_URL } from '../config';
 
 export default function SignUp({navigation}) {
     const dispatch = useDispatch();
-    const userList = useSelector(state => state.user.userList);
+    const [errors, setErrors] = useState({})
 
+    const handleSignUp = async() => {
+        let newErrors = {}
+        try {
+            await dispatch(signUp({name, email, password})).unwrap();
+            Alert.alert('Success', 'Account created successfully!');
+            navigation.navigate('UserProfiles')
+        } catch (error) {
+            if(typeof error === 'object') {
+                if (Object.hasOwn(error, 'name')) {
+                    newErrors.name = error.name
+                }
+                if (Object.hasOwn(error, 'email')) {
+                    newErrors.email = error.email
+                }
+                if (Object.hasOwn(error, 'password')) {
+                    newErrors.password = error.password  
+                }
+                setErrors(newErrors)
+            }
+        }
+    }
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-
-    const handleSignUp = async() => {
-        if (!name || !email ||!password) {
-            Alert.alert('Error', 'Please fill all required fields!');
-            return;
-        }
-        try {
-            const res = await fetch('${API_BASE_URL}/signup', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name,
-                    email, 
-                    password
-                })
-            });
-        const data = await res.json()
-
-        if (res.ok) {
-            Alert.alert('Success', 'Account created sucessfully!');
-            navigation.navigate('UserProfiles')
-        }
-       else{
-            Alert.alert('Error', data.erro || 'Sign up failed')
-        }
-        }catch (error) {
-            console.error('Error signing up:', error);
-            Alert.alert('Error', 'Failed to connect to server');
-        }
-    }
-    
+    const [isMasked, setIsMasked] = useState(true);
     const handleClear = () => {
         setName(''),
         setEmail(''),
-        setPassword('')
+        setPassword(''),
+        setErrors({name:'', email:'', password:''})
     }
 
     return (
-        <SafeAreaView style={{flex:1}} edges={['left', 'right', 'top']}>
+        <SafeAreaView style={{ flex:1 }} edges={ ['left', 'right', 'top'] }>
         <View style={styles.container}>
             <View style={styles.topText}>
-                <Text style={{fontSize: 28}}>Sign Up</Text>
+                <Text style={{ fontSize:28 }}>Sign Up</Text>
             </View>
             <View style={styles.content}>
-                <UserLoginInput text={name} setText={setName} placeholder='User Name'/>
-                <UserLoginInput text={email} setText={setEmail} placeholder='Email'/>
-                <UserLoginInput text={password} setText={setPassword} placeholder='Password'/>
-                <TouchableOpacity style={{flexDirection:'row', alignItems: 'center'}} onPress={() => handleClear()}>
-                    <IconButton name={'close-circle'} size={18}/>
-                    <Text style={{fontSize: 16}}>Clear</Text>
-                </TouchableOpacity>
+                <View style={{ flex:3 }}>      
+                    <UserLoginInput text={name} setText={setName} placeholder='User Name'/>
+                    {errors.name ? <Text style={{ color:'red', fontSize:10, marginLeft:10 }}>*{ errors.name }</Text> : null}
+                </View>
+                <View style={{ flex:3 }}>
+                    <UserLoginInput text={email} setText={setEmail} placeholder='Email'/>
+                        {errors.email ? <Text style={{ color:'red', fontSize:10, marginLeft:10 }}>*{ errors.email }</Text> : null}
+                </View>
+                <View style={{ flex:4 }}>
+                    <View style={{flexDirection: 'row'}}>
+                        <View style={{ flex: 8 }}>
+                            <UserLoginInput text={password} setText={setPassword} placeholder='Password' secureTextEntry={isMasked}/>
+                        </View>
+                        <TouchableOpacity onPress={() => setIsMasked(!isMasked)} style={{ justifyContent: 'center' }}>
+                            {isMasked ? <IconButton name='eye-off-outline' size={20} color='black'/> : <IconButton name='eye-outline' size={20} color='black'/>}
+                        </TouchableOpacity>
+                    </View>
+                        {errors.password ? <Text style={{ color: 'red', fontSize:10, marginLeft:10 }}>*{ errors.password }</Text> : null}   
+                </View>
+                    <TouchableOpacity style={{ flexDirection:'row', alignItems: 'center' }} onPress={() => handleClear()}>
+                        <IconButton name={'close-circle-outline'} size={18}/>
+                        <Text style={{ fontSize: 16 }}>Clear</Text>
+                    </TouchableOpacity>
             </View>
             <View style={styles.buttonSignUpBox}>
                 <TouchableOpacity style={[styles.buttonSignUp, {flexDirection:'row', alignItems: 'center'}]} 
-                    onPress={() => handleSignUp({name, email, password})}> 
+                    onPress={() => handleSignUp()}> 
                     <IconButton name={'happy'} size={18} color='white'/>
                     <Text style={{color: 'white'}}>Sign Up</Text>
                 </TouchableOpacity>
@@ -80,7 +85,7 @@ export default function SignUp({navigation}) {
         </View>
         <View style={styles.bottom}>
             <Text>Already have an account?</Text>
-            <Text style={{color: colors.titleBorder, fontSize: 15}} onPress={() => navigation.navigate('Login')}>  Login</Text>
+            <Text style={{color: colors.titleBorder, fontSize: 15}} onPress={() => navigation.navigate('SignIn')}>  Login</Text>
         </View>
         </SafeAreaView>
     )
@@ -100,14 +105,15 @@ const styles = StyleSheet.create({
     },
     topText: {
         flex: 2,
-        justifyContent: 'flex-end',
+        justifyContent: 'center',
         alignItems: 'center',
     },
     content: {
         flex: 6,
+        flexDirection: 'column',
         justifyContent: 'center',
         marginLeft: 20,
-        marginRight: 20
+        marginRight: 20,
     },
     buttonSignUpBox: {
         flex: 2,
